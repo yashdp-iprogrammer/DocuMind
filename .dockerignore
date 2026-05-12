@@ -1,0 +1,10 @@
+.env
+.venv
+__pycache__
+*.pyc
+*.pyo
+.git
+.gitignore
+logs/
+src/vector_store/uploads/*
+src/vector_store/chroma_db/*

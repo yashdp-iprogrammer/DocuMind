@@ -1,0 +1,54 @@
+services:
+
+  mysql:
+    image: mysql:8.0
+    container_name: documind_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MY_SQL_PASSWORD}
+      MYSQL_DATABASE: ${MY_SQL_DB}
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MY_SQL_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    image: documind
+    build: .
+    container_name: documind_api
+    restart: unless-stopped
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      MY_SQL_HOST: mysql
+    volumes:
+      - vector_store:/app/src/vector_store
+      - logs:/app/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    image: documind
+    container_name: documind_frontend
+    restart: unless-stopped
+    command: streamlit run app.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    depends_on:
+      - api
+
+volumes:
+  mysql_data:
+  vector_store:
+  logs:

@@ -2,7 +2,8 @@ import streamlit as st
 import requests
 import re
 
-BASE_URL = "http://localhost:8000"
+# BASE_URL = "http://localhost:8000"
+BASE_URL = "http://api:8000"
 
 st.set_page_config(page_title="DocuMind - AI Chat", layout="wide")
 
@@ -20,60 +21,70 @@ if "registered_success" not in st.session_state:
 if "reg_version" not in st.session_state:
     st.session_state.reg_version = 0
 
+
+# ---------------- HELPERS ----------------
 def get_error_message(response):
-    """Extracts error message from the standardized FastAPI JSON response."""
     try:
         data = response.json()
         return data.get("error", "An unexpected error occurred.")
     except Exception:
         return f"Server Error: {response.status_code}"
 
-# VALIDATION
+
 def is_valid_email(email):
     return re.match(r"^[^@]+@[^@]+\.[^@]+$", email)
+
 
 def is_valid_phone(phone):
     return re.fullmatch(r"\d{10}", phone)
 
-# API
+
+# ---------------- API ----------------
 def login(email, password):
     return requests.post(f"{BASE_URL}/login", json={"email": email, "password": password})
+
 
 def register_user(name, email, phone, password):
     return requests.post(f"{BASE_URL}/users/create", json={
         "name": name, "email": email, "phone": phone, "password": password
     })
 
+
 def embed_files(files, token):
     headers = {"Authorization": f"Bearer {token}"}
     files_payload = [("files", (file.name, file, file.type)) for file in files]
     return requests.post(f"{BASE_URL}/documents/embed", files=files_payload, headers=headers)
 
+
 def chat(query, token):
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     return requests.post(f"{BASE_URL}/chat", headers=headers, json={"query": query})
+
 
 def get_documents(token):
     headers = {"Authorization": f"Bearer {token}"}
     return requests.get(f"{BASE_URL}/documents?size=50", headers=headers)
 
+
 def delete_document(doc_id, token):
     headers = {"Authorization": f"Bearer {token}"}
     return requests.delete(f"{BASE_URL}/documents/{doc_id}", headers=headers)
 
-# AUTH UI
+
+# ---------------- AUTH UI ----------------
 def auth_ui():
     col1, col2, col3 = st.columns([1, 2, 1])
 
     with col2:
-        st.markdown("<h3 style='text-align:center;'>DocuMind AI</h3>", unsafe_allow_html=True)
-
+        st.markdown("<h2 style='text-align: center;'>🤖 DocuMind AI</h2>", unsafe_allow_html=True)
+        
         if st.session_state.registered_success:
-            st.success("Registered successfully! Please login below.")
+            st.success("Registered successfully! Please login.")
 
         with st.container(border=True):
             tab_login, tab_register = st.tabs(["Login", "Register"])
 
+            # LOGIN
             with tab_login:
                 email = st.text_input("Email", key="login_email")
                 password = st.text_input("Password", type="password", key="login_pwd")
@@ -87,12 +98,12 @@ def auth_ui():
                             data = res.json()
                             st.session_state.token = data["access_token"]
                             st.session_state.user = email
-                            st.session_state.registered_success = False 
+                            st.session_state.registered_success = False
                             st.rerun()
                         else:
-                            # Standardized Login Error
                             st.error(get_error_message(res))
 
+            # REGISTER
             with tab_register:
                 v = st.session_state.reg_version
                 errors = st.session_state.form_errors
@@ -113,7 +124,7 @@ def auth_ui():
                     errors = {}
                     if not name: errors["name"] = "Name is required"
                     if not reg_email: errors["email"] = "Email is required"
-                    elif not is_valid_email(reg_email): errors["email"] = "Invalid email format"
+                    elif not is_valid_email(reg_email): errors["email"] = "Invalid email"
                     if not phone: errors["phone"] = "Phone is required"
                     elif not is_valid_phone(phone): errors["phone"] = "Must be 10 digits"
                     if not reg_password: errors["password"] = "Password is required"
@@ -125,18 +136,19 @@ def auth_ui():
                     else:
                         res = register_user(name, reg_email, phone, reg_password)
                         if res.status_code in [200, 201]:
-                            st.session_state.reg_version += 1 
-                            st.session_state.registered_success = True 
+                            st.session_state.reg_version += 1
+                            st.session_state.registered_success = True
                             st.session_state.form_errors = {}
                             st.rerun()
                         else:
-                            # Standardized Registration Error
                             st.error(get_error_message(res))
 
-# MAIN APP
+
+# ---------------- MAIN APP ----------------
 def main_app():
-    st.sidebar.title("DocuMind")
-    st.sidebar.write(f"Welcome, {st.session_state.user}")
+    # SIDEBAR
+    st.sidebar.title("🤖 DocuMind")
+    st.sidebar.caption(f"{st.session_state.user}")
 
     if st.sidebar.button("Logout"):
         for k in list(st.session_state.keys()):
@@ -144,63 +156,87 @@ def main_app():
         st.rerun()
 
     st.sidebar.divider()
-    st.sidebar.subheader("Upload Documents")
-    files = st.sidebar.file_uploader("Upload PDFs", accept_multiple_files=True)
 
-    if st.sidebar.button("Embed Documents"):
+    files = st.sidebar.file_uploader(
+        "Upload PDFs",
+        accept_multiple_files=True,
+        help="Max 200MB per file"
+    )
+
+    if st.sidebar.button("Process Documents", use_container_width=True):
         if not files:
             st.sidebar.warning("Upload files first")
         else:
             with st.sidebar:
-                with st.spinner("Embedding..."):
+                with st.spinner("Processing..."):
                     res = embed_files(files, st.session_state.token)
                     if res.status_code == 200:
-                        st.success("Embedding complete")
+                        st.success("✅ Documents processed")
                     else:
-                        # Standardized Embedding Error
                         st.error(get_error_message(res))
 
-    st.title("AI Document Chat")
+    col1, col2, col3 = st.columns([1, 2, 1])
+
+    with col2:
+        st.markdown("<h3 style='text-align: center;'>💬 Chat with your documents</h3>", unsafe_allow_html=True)
 
     with st.expander("Manage Your Documents", expanded=True):
         res = get_documents(st.session_state.token)
+
         if res.status_code == 200:
             docs = res.json().get("data", [])
+
             if not docs:
-                st.info("No documents uploaded")
+                st.info("No documents yet. Upload and process to start chatting.")
             else:
                 for doc in docs:
-                    d_col1, d_col2 = st.columns([0.9, 0.1])
-                    with d_col1: st.markdown(f"📄 {doc['file_name']}")
+                    d_col1, d_col2 = st.columns([0.85, 0.15])
+
+                    with d_col1:
+                        st.markdown(f"📄 {doc['file_name']}")
+
                     with d_col2:
                         if st.button("✕", key=f"del_{doc['id']}"):
                             del_res = delete_document(doc["id"], st.session_state.token)
-                            if del_res.status_code == 200: st.rerun()
-                            else: st.error(get_error_message(del_res))
+                            if del_res.status_code == 200:
+                                st.rerun()
+                            else:
+                                st.error(get_error_message(del_res))
+
         else:
             st.error(get_error_message(res))
 
     st.divider()
 
-    for chat_item in st.session_state.chat_history:
-        with st.chat_message("user"): st.write(chat_item["query"])
-        with st.chat_message("assistant"): st.write(chat_item["answer"])
 
-    query = st.chat_input("Ask something about your documents...")
+    for chat_item in st.session_state.chat_history:
+        with st.chat_message("user"):
+            st.write(chat_item["query"])
+        with st.chat_message("assistant"):
+            st.write(chat_item["answer"])
+
+    query = st.chat_input("Ask questions from your PDFs...")
 
     if query:
-        with st.chat_message("user"): st.write(query)
+        with st.chat_message("user"):
+            st.write(query)
+
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
                 res = chat(query, st.session_state.token)
+
                 if res.status_code == 200:
                     answer = res.json().get("answer", "No response")
                     st.write(answer)
-                    st.session_state.chat_history.append({"query": query, "answer": answer})
+
+                    st.session_state.chat_history.append({
+                        "query": query,
+                        "answer": answer
+                    })
                 else:
                     st.error(get_error_message(res))
 
-# ROUTER
+
 if not st.session_state.token:
     auth_ui()
 else:

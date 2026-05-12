@@ -1,6 +1,8 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
+from src.utils.limiter import limiter
 from src.api.chat import router as chat_router
 from src.api.user import router as user_router
 from src.api.auth import router as auth_router
@@ -16,6 +18,18 @@ async def lifespan(app):
 
 app = FastAPI(title="LLM Doc Chatbot", lifespan=lifespan)
 
+app.state.limiter = limiter
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
+    logger.warning(f"Rate limit exceeded | path={request.url} | limit={exc.detail}")
+    return JSONResponse(
+        status_code=429,
+        content={
+            "success": False,
+            "error": f"Rate limit exceeded. Please slow down.",
+        }
+    )
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):

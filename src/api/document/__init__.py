@@ -1,11 +1,12 @@
 import os
 from typing import List
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
+from fastapi import APIRouter, Request, UploadFile, File, Depends, HTTPException
 from src.security.o_auth import auth_dependency
 from sqlmodel.ext.asyncio.session import AsyncSession
 from src.database import get_session
 from typing import Annotated
 from src.services.document_service import DocumentService
+from src.utils.limiter import limiter
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__.split(".")[-1])
@@ -19,7 +20,9 @@ document_service_dep = Annotated[DocumentService, Depends(get_document_service)]
 
 
 @router.post("/embed")
+@limiter.limit("5/minute")
 async def embed_documents(
+    request: Request,
     document_service: document_service_dep,
     files: List[UploadFile] = File(...),
     user=Depends(auth_dependency.get_current_active_user)

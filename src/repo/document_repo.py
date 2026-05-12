@@ -1,4 +1,4 @@
-from sqlmodel import select
+from sqlmodel import select, func
 from src.model import Document
 
 
@@ -31,9 +31,9 @@ class DocumentRepo:
 
     async def count_by_user(self, user_id: int):
         result = await self.session.exec(
-            select(Document).where(Document.user_id == user_id)
+            select(func.count()).where(Document.user_id == user_id)
         )
-        return len(result.all())
+        return result.one()
 
     async def get_by_id(self, doc_id: int):
         result = await self.session.exec(
