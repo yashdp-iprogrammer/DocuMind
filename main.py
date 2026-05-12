@@ -1,11 +1,12 @@
 from fastapi import FastAPI, Request, HTTPException
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from src.api.chat import router as chat_router
 from src.api.user import router as user_router
 from src.api.auth import router as auth_router
 from src.api.document import router as document_router
 from src.database import init_db
-from src.utils.logger import logger 
+from src.utils.logger import logger
 
 
 async def lifespan(app):
@@ -25,6 +26,20 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         content={
             "success": False,
             "error": exc.detail,
+        },
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    logger.warning(f"Validation error: {exc.errors()} | Path: {request.url}")
+
+    return JSONResponse(
+        status_code=422,
+        content={
+            "success": False,
+            "error": "Validation Error",
+            "details": exc.errors(),
         },
     )
 

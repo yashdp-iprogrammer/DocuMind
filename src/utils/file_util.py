@@ -3,6 +3,7 @@ import shutil
 from uuid import uuid4
 from fastapi import UploadFile
 from src.setting.config import config
+import hashlib
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__.split(".")[-1])
@@ -41,3 +42,17 @@ def save_file(file: UploadFile) -> str:
     logger.info(f"File saved successfully: {file_path}")
 
     return file_path
+
+def get_file_hash(file: UploadFile) -> str:
+    """
+    Generate SHA-256 hash for file content
+    """
+
+    hasher = hashlib.sha256()
+
+    content = file.file.read()
+    hasher.update(content)
+
+    file.file.seek(0)
+
+    return hasher.hexdigest()
