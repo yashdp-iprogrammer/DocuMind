@@ -26,6 +26,7 @@ class Config:
 
         self.EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL")
         self.LLM_MODEL = os.getenv("LLM_MODEL")
+        self.JUDGE_LLM_MODEL = os.getenv("JUDGE_LLM_MODEL")
         self.RERANK_API_KEY = os.getenv("COHERE_API_KEY")
         self.GROQ_API_KEY = os.getenv("GROQ_API_KEY")
         self.VECTOR_DB_PATH = os.getenv("VECTOR_DB_PATH")

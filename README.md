@@ -251,3 +251,19 @@ docker compose up --build
 | Password Hashing | Argon2 (`passlib`) |
 | PDF Processing | LangChain `PyPDFLoader` |
 | Package Manager | `uv` |
+
+---
+
+## Evaluation
+
+The RAG pipeline was benchmarked using [RAGAS](https://docs.ragas.io) across 10 domain-specific
+query–ground-truth pairs on a real PDF document. Metrics were computed using
+`llama-3.3-70b-versatile` via Groq and `all-MiniLM-L6-v2` embeddings.
+
+| Metric | Score |
+|---|---|
+| Faithfulness | 0.921 |
+| Answer Relevancy | 0.916 |
+| Context Precision | 0.928 |
+| Context Recall | 0.967 |
+| **Composite** | **0.933** |

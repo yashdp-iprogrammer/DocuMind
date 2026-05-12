@@ -7,6 +7,7 @@ from src.api.chat import router as chat_router
 from src.api.user import router as user_router
 from src.api.auth import router as auth_router
 from src.api.document import router as document_router
+from src.api.evaluation import router as evaluation_router
 from src.database import init_db
 from src.utils.logger import logger
 
@@ -75,3 +76,4 @@ app.include_router(chat_router)
 app.include_router(user_router)
 app.include_router(auth_router)
 app.include_router(document_router)
+app.include_router(evaluation_router)
