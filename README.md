@@ -219,6 +219,10 @@ VECTOR_DB_PATH=src/vector_store
 ### Run
 
 ```bash
+
+# Apply database migrations
+alembic upgrade head
+
 # Start the API
 uvicorn main:app --reload
 
@@ -251,6 +255,7 @@ docker compose up --build
 | Password Hashing | Argon2 (`passlib`) |
 | PDF Processing | LangChain `PyPDFLoader` |
 | Package Manager | `uv` |
+| Migrations | Alembic |
 
 ---
 

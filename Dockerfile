@@ -10,9 +10,10 @@ RUN apt-get update && apt-get install -y \
 
 RUN pip install uv
 
-COPY pyproject.toml .
+COPY pyproject.toml uv.lock ./
 
-RUN uv sync --no-dev
+RUN uv sync --no-dev --frozen
+
 
 # ---- Stage 2: Runtime ----
 FROM python:3.12-slim

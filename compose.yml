@@ -7,6 +7,8 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MY_SQL_PASSWORD}
       MYSQL_DATABASE: ${MY_SQL_DB}
+      MYSQL_USER: ${MY_SQL_USER}
+      MYSQL_PASSWORD: ${MY_SQL_PASSWORD}
     ports:
       - "3307:3306"
     volumes:
@@ -17,9 +19,22 @@ services:
       timeout: 5s
       retries: 5
 
-  api:
+  migrate:
     image: documind
     build: .
+    container_name: documind_migrate
+    command: alembic upgrade head
+    env_file:
+      - .env
+    environment:
+      MY_SQL_HOST: mysql
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: on-failure
+
+  api:
+    image: documind
     container_name: documind_api
     restart: unless-stopped
     command: uvicorn main:app --host 0.0.0.0 --port 8000
@@ -35,6 +50,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
   frontend:
     image: documind

@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "aiomysql>=0.3.2",
+    "alembic>=1.18.4",
     "argon2-cffi>=25.1.0",
     "chromadb>=1.5.7",
     "cohere>=6.1.0",

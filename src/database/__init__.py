@@ -1,4 +1,3 @@
-from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from src.setting.config import config
@@ -36,9 +35,4 @@ async def get_session():
 
 
 async def init_db():
-    logger.info("Initializing database schema")
-
-    async with engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.create_all)
-
-    logger.info("Database schema initialized successfully")
+    logger.info("Database ready — schema managed by Alembic")
